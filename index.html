@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="mg">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PR.Social Bot</title>
+  <style>
+    body { font-family: sans-serif; padding: 15px; background: #121212; color: #fff; }
+    input, button, select { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: none; }
+    button { background: #0088cc; color: #fff; font-weight: bold; cursor: pointer; }
+    button.stop { background: #d9534f; }
+    #logs { background: #000; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; border: 1px solid #333; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>PR.Social Bot Control</h2>
+  
+  <label>API Token:</label>
+  <input type="text" id="apiToken" placeholder="prsa_YOUR_API_KEY">
+
+  <label>Service ID:</label>
+  <input type="number" id="serviceId" value="12">
+
+  <label>Account Identity:</label>
+  <input type="text" id="account" placeholder="user_one">
+
+  <button id="btnStart" onclick="startBot()">HALEFA NY BOT</button>
+  <button id="btnStop" class="stop" onclick="stopBot()" style="display:none;">HAMPANJANONA</button>
+
+  <h3>Logs / Fizotran'ny Bot:</h3>
+  <div id="logs"></div>
+
+  <script>
+    let isRunning = false;
+    const API_BASE = "https://api.pr.social/api/v1";
+
+    function log(msg) {
+      const logsDiv = document.getElementById('logs');
+      logsDiv.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+      logsDiv.scrollTop = logsDiv.scrollHeight;
+    }
+
+    async function startBot() {
+      const token = document.getElementById('apiToken').value;
+      const serviceId = document.getElementById('serviceId').value;
+      const account = document.getElementById('account').value;
+
+      if (!token || !account) {
+        alert("Sokafy ary fenoy ny API Token sy ny Account Identity!");
+        return;
+      }
+
+      isRunning = true;
+      document.getElementById('btnStart').style.display = 'none';
+      document.getElementById('btnStop').style.display = 'block';
+
+      log("Manomboka ny Bot...");
+
+      while (isRunning) {
+        try {
+          // 1. Get Single Order
+          const orderRes = await fetch(`${API_BASE}/getOrder?service_id=${serviceId}&account_identity=${account}&api_token=${token}`);
+          const order = await orderRes.json();
+
+          if (!order || !order.order_id) {
+            log("Tsy misy asa azo alaina, hiandry 10 segondra...");
+            await new Promise(r => setTimeout(r, 10000));
+            continue;
+          }
+
+          log(`Asa azo #${order.order_id} - ${order.url}`);
+
+          // 2. Check Order
+          const checkRes = await fetch(`${API_BASE}/check?order_id=${order.order_id}&account_identity=${account}&api_token=${token}`);
+          const checkStatus = await checkRes.json();
+
+          if (!checkStatus.valid) {
+            log("Asa tsy manan-kery, holavina (Ignore)...");
+            await fetch(`${API_BASE}/ignore?order_id=${order.order_id}&account_identity=${account}&api_token=${token}`);
+            continue;
+          }
+
+          // 3. Report Completion
+          log("Mandoa tatitra (Report)...");
+          const reportRes = await fetch(`${API_BASE}/report?api_token=${token}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              reports: [{ order_id: order.order_id, account: account }]
+            })
+          });
+          
+          const reportData = await reportRes.json();
+          log(`Tatitra vita: ${JSON.stringify(reportData)}`);
+
+        } catch (err) {
+          log(`Erora: ${err.message}`);
+        }
+
+        // Fiandrasana kely alohan'ny hanohizana
+        await new Promise(r => setTimeout(r, 5000));
+      }
+    }
+
+    function stopBot() {
+      isRunning = false;
+      document.getElementById('btnStart').style.display = 'block';
+      document.getElementById('btnStop').style.display = 'none';
+      log("Ajanona ny Bot.");
+    }
+  </script>
+</body>
+</html>
