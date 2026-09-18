@@ -1,0 +1,6 @@
+{
+  "appId": "com.prsocial.bot",
+  "appName": "PR.Social Bot",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
