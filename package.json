@@ -1,0 +1,16 @@
+{
+  "name": "prsocial-bot-app",
+  "version": "1.0.0",
+  "description": "PR Social Bot APK",
+  "main": "index.js",
+  "scripts": {
+    "build": "mkdir -p www && cp index.html www/"
+  },
+  "dependencies": {
+    "@capacitor/android": "^5.0.0",
+    "@capacitor/core": "^5.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^5.0.0"
+  }
+}
