@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - master
   workflow_dispatch:
 
 jobs:
@@ -19,7 +20,7 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install Dependencies
+      - name: Install Dependencies & Build Web Assets
         run: |
           npm install
           npm run build
@@ -30,7 +31,7 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Add Android Platform & Build
+      - name: Add Android Platform & Build APK
         run: |
           npx cap add android
           npx cap copy android
