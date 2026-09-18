@@ -6,10 +6,10 @@
   <title>PR.Social Bot</title>
   <style>
     body { font-family: sans-serif; padding: 15px; background: #121212; color: #fff; }
-    input, button, select { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: none; }
+    input, button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: none; box-sizing: border-box; }
     button { background: #0088cc; color: #fff; font-weight: bold; cursor: pointer; }
     button.stop { background: #d9534f; }
-    #logs { background: #000; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; border: 1px solid #333; margin-top: 10px; }
+    #logs { background: #000; padding: 10px; height: 220px; overflow-y: auto; font-family: monospace; font-size: 12px; border: 1px solid #333; margin-top: 10px; border-radius: 5px; }
   </style>
 </head>
 <body>
@@ -30,9 +30,34 @@
   <h3>Logs / Fizotran'ny Bot:</h3>
   <div id="logs"></div>
 
+  <script src="cordova.js"></script>
   <script>
     let isRunning = false;
     const API_BASE = "https://api.pr.social/api/v1";
+
+    // Fikirakirana ny Background Mode rehefa vonona ny fampiharana
+    document.addEventListener('deviceready', () => {
+      if (window.cordova && window.cordova.plugins && window.cordova.plugins.backgroundMode) {
+        const bgMode = cordova.plugins.backgroundMode;
+        
+        // Amboarina ny fampahafantarana (Notification) eo amin'ny Android
+        bgMode.setDefaults({
+          title: "PR.Social Bot",
+          text: "Mandeha an-damosina ny Bot...",
+          icon: "icon",
+          color: "0088cc",
+          resume: true,
+          hidden: false
+        });
+
+        // Tsy avela hatory ny CPU rehefa afofo ny ekrana
+        bgMode.on('activate', () => {
+          bgMode.disableWebViewOptimizations();
+        });
+
+        log("Background Mode Plugin: Vonona tsara.");
+      }
+    }, false);
 
     function log(msg) {
       const logsDiv = document.getElementById('logs');
@@ -48,6 +73,12 @@
       if (!token || !account) {
         alert("Sokafy ary fenoy ny API Token sy ny Account Identity!");
         return;
+      }
+
+      // Alefa ny Background Mode mba tsy hovoin'ny Android ilay Bot
+      if (window.cordova && window.cordova.plugins && window.cordova.plugins.backgroundMode) {
+        cordova.plugins.backgroundMode.enable();
+        log("Background Mode: ALEFA.");
       }
 
       isRunning = true;
@@ -97,13 +128,20 @@
           log(`Erora: ${err.message}`);
         }
 
-        // Fiandrasana kely alohan'ny hanohizana
+        // Fiandrasana 5 segondra alohan'ny hanohizana
         await new Promise(r => setTimeout(r, 5000));
       }
     }
 
     function stopBot() {
       isRunning = false;
+
+      // Un-enable background mode rehefa ajanona ny bot
+      if (window.cordova && window.cordova.plugins && window.cordova.plugins.backgroundMode) {
+        cordova.plugins.backgroundMode.disable();
+        log("Background Mode: TSY ALEFA INTSONY.");
+      }
+
       document.getElementById('btnStart').style.display = 'block';
       document.getElementById('btnStop').style.display = 'none';
       log("Ajanona ny Bot.");
