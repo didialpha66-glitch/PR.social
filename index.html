@@ -3,59 +3,247 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PR.Social Bot</title>
+  <title>PR.Social Bot Control</title>
   <style>
-    body { font-family: sans-serif; padding: 15px; background: #121212; color: #fff; }
-    input, button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: none; box-sizing: border-box; }
-    button { background: #0088cc; color: #fff; font-weight: bold; cursor: pointer; }
+    body { font-family: sans-serif; padding: 15px; background: #121212; color: #fff; margin: 0; }
+    .card { background: #1e1e1e; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #333; }
+    h3 { margin-top: 0; color: #0088cc; font-size: 16px; }
+    label { font-size: 12px; color: #aaa; display: block; margin-top: 6px; }
+    input, select, button { width: 100%; padding: 10px; margin: 4px 0 8px 0; border-radius: 5px; border: 1px solid #444; background: #2a2a2a; color: #fff; box-sizing: border-box; }
+    button { background: #0088cc; color: #fff; font-weight: bold; cursor: pointer; border: none; margin-top: 8px; }
+    button.add-btn { background: #28a745; }
+    button.info-btn { background: #17a2b8; }
     button.stop { background: #d9534f; }
-    #logs { background: #000; padding: 10px; height: 220px; overflow-y: auto; font-family: monospace; font-size: 12px; border: 1px solid #333; margin-top: 10px; border-radius: 5px; }
+    #logs { background: #000; padding: 10px; height: 180px; overflow-y: auto; font-family: monospace; font-size: 11px; border: 1px solid #333; border-radius: 5px; }
+    
+    /* Langue selector */
+    .lang-container { display: flex; gap: 5px; margin-bottom: 15px; }
+    .lang-btn { padding: 6px 10px; font-size: 12px; margin: 0; background: #333; }
+    .lang-btn.active { background: #0088cc; }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+    th, td { border: 1px solid #444; padding: 6px; text-align: left; }
+    th { background: #333; color: #0088cc; }
+    .table-container { max-height: 180px; overflow-y: auto; }
   </style>
 </head>
 <body>
-  <h2>PR.Social Bot Control</h2>
-  
-  <label>API Token:</label>
-  <input type="text" id="apiToken" placeholder="prsa_YOUR_API_KEY">
 
-  <label>Service ID:</label>
-  <input type="number" id="serviceId" value="12">
+  <!-- LANGUAGE SELECTOR -->
+  <div class="lang-container">
+    <button class="lang-btn active" onclick="changeLang('mg')">🇲🇬 MG</button>
+    <button class="lang-btn" onclick="changeLang('fr')">🇫🇷 FR</button>
+    <button class="lang-btn" onclick="changeLang('en')">🇬🇧 EN</button>
+    <button class="lang-btn" onclick="changeLang('zh')">🇨🇳 中文</button>
+  </div>
 
-  <label>Account Identity:</label>
-  <input type="text" id="account" placeholder="user_one">
+  <!-- 1. CONFIGURATION -->
+  <div class="card">
+    <h3 id="t-config">1. Fikirakirana</h3>
+    <label id="t-lbl-token">API Token:</label>
+    <input type="text" id="apiToken" placeholder="prsa_YOUR_API_KEY">
+  </div>
 
-  <button id="btnStart" onclick="startBot()">HALEFA NY BOT</button>
-  <button id="btnStop" class="stop" onclick="stopBot()" style="display:none;">HAMPANJANONA</button>
+  <!-- 2. CHECK SERVICES -->
+  <div class="card">
+    <h3 id="t-services-title">2. Jereo ny Tolotra & Service IDs</h3>
+    <button class="info-btn" id="t-btn-services" onclick="fetchServices()">HIJERY SERVICE IDs (/services)</button>
+    <div class="table-container">
+      <table id="servicesTable" style="display:none;">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Platform</th>
+            <th id="t-th-name">Name / Action</th>
+          </tr>
+        </thead>
+        <tbody id="servicesBody"></tbody>
+      </table>
+    </div>
+  </div>
 
-  <h3>Logs / Fizotran'ny Bot:</h3>
-  <div id="logs"></div>
+  <!-- 3. CHECK ACCOUNTS -->
+  <div class="card">
+    <h3 id="t-accounts-title">3. Jereo ny Kaonty Tafiditra</h3>
+    <button class="info-btn" id="t-btn-accounts" onclick="fetchAccounts()">HIJERY KAONTY REHETRA (/accounts)</button>
+    <div class="table-container">
+      <table id="accountsTable" style="display:none;">
+        <thead>
+          <tr>
+            <th>Platform</th>
+            <th>Username</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="accountsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 4. ADD ACCOUNTS SECTION -->
+  <div class="card">
+    <h3 id="t-add-title">4. Hampiditra Compte Vaovao</h3>
+    <label id="t-lbl-platform">Sehatra (Platform):</label>
+    <select id="addPlatform">
+      <option value="tiktok">TikTok</option>
+      <option value="telegram">Telegram</option>
+      <option value="instagram">Instagram</option>
+      <option value="youtube">YouTube</option>
+      <option value="twitter">Twitter / X</option>
+    </select>
+
+    <label id="t-lbl-usernames">Usernames (Atsaharo amin'ny koma):</label>
+    <input type="text" id="addUsernames" placeholder="user_one, user_two">
+
+    <button class="add-btn" id="t-btn-add" onclick="addAccounts()">AMPIDIRO NY COMPTE</button>
+  </div>
+
+  <!-- 5. RUN BOT SECTION -->
+  <div class="card">
+    <h3 id="t-run-title">5. Handefa ny Bot</h3>
+    <label id="t-lbl-serviceid">Service ID:</label>
+    <input type="number" id="serviceId" value="12">
+
+    <label id="t-lbl-account">Account Identity Hampiasaina:</label>
+    <input type="text" id="account" placeholder="user_one">
+
+    <button id="btnStart" onclick="startBot()">HALEFA NY BOT</button>
+    <button id="btnStop" class="stop" onclick="stopBot()" style="display:none;">HAMPANJANONA</button>
+  </div>
+
+  <!-- 6. LOGS SECTION -->
+  <div class="card">
+    <h3 id="t-logs-title">6. Logs / Fizotran'ny Bot</h3>
+    <div id="logs"></div>
+  </div>
 
   <script src="cordova.js"></script>
   <script>
     let isRunning = false;
+    let currentLang = 'mg';
     const API_BASE = "https://api.pr.social/api/v1";
 
-    // Fikirakirana ny Background Mode rehefa vonona ny fampiharana
+    const translations = {
+      mg: {
+        config: "1. Fikirakirana",
+        token: "API Token:",
+        servicesTitle: "2. Jereo ny Tolotra & Service IDs",
+        btnServices: "HIJERY SERVICE IDs (/services)",
+        accountsTitle: "3. Jereo ny Kaonty Tafiditra",
+        btnAccounts: "HIJERY KAONTY REHETRA (/accounts)",
+        addTitle: "4. Hampiditra Compte Vaovao",
+        platform: "Sehatra (Platform):",
+        usernames: "Usernames (Atsaharo amin'ny koma):",
+        btnAdd: "AMPIDIRO NY COMPTE",
+        runTitle: "5. Handefa ny Bot",
+        serviceId: "Service ID:",
+        account: "Account Identity Hampiasaina:",
+        btnStart: "HALEFA NY BOT",
+        btnStop: "HAMPANJANONA",
+        logsTitle: "6. Logs / Fizotran'ny Bot",
+        thName: "Anarana / Asa"
+      },
+      fr: {
+        config: "1. Configuration",
+        token: "Clé API (API Token) :",
+        servicesTitle: "2. Consulter les Services & IDs",
+        btnServices: "AFFICHER LES SERVICES (/services)",
+        accountsTitle: "3. Consulter les Comptes Ajoutés",
+        btnAccounts: "AFFICHER LES COMPTES (/accounts)",
+        addTitle: "4. Ajouter de Nouveaux Comptes",
+        platform: "Plateforme :",
+        usernames: "Noms d'utilisateur (séparés par virgule) :",
+        btnAdd: "AJOUTER LES COMPTES",
+        runTitle: "5. Lancer le Bot",
+        serviceId: "ID du Service :",
+        account: "Identité du Compte Utilisé :",
+        btnStart: "LANCER LE BOT",
+        btnStop: "ARRÊTER LE BOT",
+        logsTitle: "6. Journaux / Logs du Bot",
+        thName: "Nom / Action"
+      },
+      en: {
+        config: "1. Configuration",
+        token: "API Token:",
+        servicesTitle: "2. View Services & IDs",
+        btnServices: "FETCH SERVICES (/services)",
+        accountsTitle: "3. View Added Accounts",
+        btnAccounts: "FETCH ACCOUNTS (/accounts)",
+        addTitle: "4. Add New Accounts",
+        platform: "Platform:",
+        usernames: "Usernames (comma separated):",
+        btnAdd: "ADD ACCOUNTS",
+        runTitle: "5. Run Bot",
+        serviceId: "Service ID:",
+        account: "Account Identity To Use:",
+        btnStart: "START BOT",
+        btnStop: "STOP BOT",
+        logsTitle: "6. Bot Logs",
+        thName: "Name / Action"
+      },
+      zh: {
+        config: "1. 配置设置",
+        token: "API 密钥 (Token):",
+        servicesTitle: "2. 查看服务与 ID",
+        btnServices: "获取服务列表 (/services)",
+        accountsTitle: "3. 查看已添加账号",
+        btnAccounts: "获取账号列表 (/accounts)",
+        addTitle: "4. 添加新账号",
+        platform: "平台类别:",
+        usernames: "用户名 (用逗号分隔):",
+        btnAdd: "添加账号",
+        runTitle: "5. 运行机器人",
+        serviceId: "服务 ID:",
+        account: "使用的账号身份:",
+        btnStart: "启动机器人",
+        btnStop: "停止机器人",
+        logsTitle: "6. 运行日志",
+        thName: "名称 / 操作"
+      }
+    };
+
+    function changeLang(lang) {
+      currentLang = lang;
+      const t = translations[lang];
+
+      document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      document.getElementById('t-config').innerText = t.config;
+      document.getElementById('t-lbl-token').innerText = t.token;
+      document.getElementById('t-services-title').innerText = t.servicesTitle;
+      document.getElementById('t-btn-services').innerText = t.btnServices;
+      document.getElementById('t-accounts-title').innerText = t.accountsTitle;
+      document.getElementById('t-btn-accounts').innerText = t.btnAccounts;
+      document.getElementById('t-add-title').innerText = t.addTitle;
+      document.getElementById('t-lbl-platform').innerText = t.platform;
+      document.getElementById('t-lbl-usernames').innerText = t.usernames;
+      document.getElementById('t-btn-add').innerText = t.btnAdd;
+      document.getElementById('t-run-title').innerText = t.runTitle;
+      document.getElementById('t-lbl-serviceid').innerText = t.serviceId;
+      document.getElementById('t-lbl-account').innerText = t.account;
+      document.getElementById('btnStart').innerText = t.btnStart;
+      document.getElementById('btnStop').innerText = t.btnStop;
+      document.getElementById('t-logs-title').innerText = t.logsTitle;
+      document.getElementById('t-th-name').innerText = t.thName;
+    }
+
     document.addEventListener('deviceready', () => {
       if (window.cordova && window.cordova.plugins && window.cordova.plugins.backgroundMode) {
         const bgMode = cordova.plugins.backgroundMode;
-        
-        // Amboarina ny fampahafantarana (Notification) eo amin'ny Android
         bgMode.setDefaults({
           title: "PR.Social Bot",
-          text: "Mandeha an-damosina ny Bot...",
+          text: "Running in background...",
           icon: "icon",
           color: "0088cc",
           resume: true,
           hidden: false
         });
-
-        // Tsy avela hatory ny CPU rehefa afofo ny ekrana
         bgMode.on('activate', () => {
           bgMode.disableWebViewOptimizations();
         });
-
-        log("Background Mode Plugin: Vonona tsara.");
+        log("Background Mode: Ready.");
       }
     }, false);
 
@@ -65,86 +253,146 @@
       logsDiv.scrollTop = logsDiv.scrollHeight;
     }
 
+    async function fetchServices() {
+      const token = document.getElementById('apiToken').value;
+      if (!token) return alert("API Token required!");
+
+      log("Fetching /services...");
+      try {
+        const res = await fetch(`${API_BASE}/services?api_token=${token}`);
+        const data = await res.json();
+        const tbody = document.getElementById('servicesBody');
+        tbody.innerHTML = "";
+        const servicesList = Array.isArray(data) ? data : (data.services || []);
+
+        servicesList.forEach(srv => {
+          tbody.innerHTML += `<tr>
+            <td><b>${srv.id || srv.service_id}</b></td>
+            <td>${srv.platform || '-'}</td>
+            <td>${srv.name || srv.title || '-'}</td>
+          </tr>`;
+        });
+        document.getElementById('servicesTable').style.display = "table";
+        log(`Services loaded: ${servicesList.length}`);
+      } catch (err) {
+        log(`Error: ${err.message}`);
+      }
+    }
+
+    async function fetchAccounts() {
+      const token = document.getElementById('apiToken').value;
+      if (!token) return alert("API Token required!");
+
+      log("Fetching /accounts...");
+      try {
+        const res = await fetch(`${API_BASE}/accounts?api_token=${token}`);
+        const data = await res.json();
+        const tbody = document.getElementById('accountsBody');
+        tbody.innerHTML = "";
+        const accountsList = Array.isArray(data) ? data : (data.accounts || []);
+
+        accountsList.forEach(acc => {
+          tbody.innerHTML += `<tr>
+            <td><b>${acc.platform || '-'}</b></td>
+            <td>${acc.username || acc.account_identity || acc.identity || '-'}</td>
+            <td>${acc.status || 'Active'}</td>
+          </tr>`;
+        });
+        document.getElementById('accountsTable').style.display = "table";
+        log(`Accounts loaded: ${accountsList.length}`);
+      } catch (err) {
+        log(`Error: ${err.message}`);
+      }
+    }
+
+    async function addAccounts() {
+      const token = document.getElementById('apiToken').value;
+      const platform = document.getElementById('addPlatform').value;
+      const rawUsernames = document.getElementById('addUsernames').value;
+
+      if (!token || !rawUsernames) return alert("Fill required fields!");
+
+      const usernames = rawUsernames.split(',').map(u => u.trim()).filter(u => u.length > 0);
+      log(`Adding ${usernames.length} account(s) on ${platform}...`);
+
+      try {
+        const res = await fetch(`${API_BASE}/accounts/add?api_token=${token}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ platform, usernames })
+        });
+        const data = await res.json();
+        log(`Response: ${JSON.stringify(data)}`);
+        alert("Done!");
+      } catch (err) {
+        log(`Error: ${err.message}`);
+      }
+    }
+
     async function startBot() {
       const token = document.getElementById('apiToken').value;
       const serviceId = document.getElementById('serviceId').value;
       const account = document.getElementById('account').value;
 
-      if (!token || !account) {
-        alert("Sokafy ary fenoy ny API Token sy ny Account Identity!");
-        return;
-      }
+      if (!token || !account) return alert("Fill API Token and Account Identity!");
 
-      // Alefa ny Background Mode mba tsy hovoin'ny Android ilay Bot
       if (window.cordova && window.cordova.plugins && window.cordova.plugins.backgroundMode) {
         cordova.plugins.backgroundMode.enable();
-        log("Background Mode: ALEFA.");
       }
 
       isRunning = true;
       document.getElementById('btnStart').style.display = 'none';
       document.getElementById('btnStop').style.display = 'block';
 
-      log("Manomboka ny Bot...");
+      log("Bot Started...");
 
       while (isRunning) {
         try {
-          // 1. Get Single Order
           const orderRes = await fetch(`${API_BASE}/getOrder?service_id=${serviceId}&account_identity=${account}&api_token=${token}`);
           const order = await orderRes.json();
 
           if (!order || !order.order_id) {
-            log("Tsy misy asa azo alaina, hiandry 10 segondra...");
+            log("No orders available, waiting 10s...");
             await new Promise(r => setTimeout(r, 10000));
             continue;
           }
 
-          log(`Asa azo #${order.order_id} - ${order.url}`);
+          log(`Order received #${order.order_id} - ${order.url}`);
 
-          // 2. Check Order
           const checkRes = await fetch(`${API_BASE}/check?order_id=${order.order_id}&account_identity=${account}&api_token=${token}`);
           const checkStatus = await checkRes.json();
 
           if (!checkStatus.valid) {
-            log("Asa tsy manan-kery, holavina (Ignore)...");
+            log("Order invalid, skipping...");
             await fetch(`${API_BASE}/ignore?order_id=${order.order_id}&account_identity=${account}&api_token=${token}`);
             continue;
           }
 
-          // 3. Report Completion
-          log("Mandoa tatitra (Report)...");
+          log("Reporting completion...");
           const reportRes = await fetch(`${API_BASE}/report?api_token=${token}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              reports: [{ order_id: order.order_id, account: account }]
-            })
+            body: JSON.stringify({ reports: [{ order_id: order.order_id, account }] })
           });
           
-          const reportData = await reportRes.json();
-          log(`Tatitra vita: ${JSON.stringify(reportData)}`);
+          log(`Report result: ${JSON.stringify(await reportRes.json())}`);
 
         } catch (err) {
-          log(`Erora: ${err.message}`);
+          log(`Error: ${err.message}`);
         }
 
-        // Fiandrasana 5 segondra alohan'ny hanohizana
         await new Promise(r => setTimeout(r, 5000));
       }
     }
 
     function stopBot() {
       isRunning = false;
-
-      // Un-enable background mode rehefa ajanona ny bot
       if (window.cordova && window.cordova.plugins && window.cordova.plugins.backgroundMode) {
         cordova.plugins.backgroundMode.disable();
-        log("Background Mode: TSY ALEFA INTSONY.");
       }
-
       document.getElementById('btnStart').style.display = 'block';
       document.getElementById('btnStop').style.display = 'none';
-      log("Ajanona ny Bot.");
+      log("Bot Stopped.");
     }
   </script>
 </body>
