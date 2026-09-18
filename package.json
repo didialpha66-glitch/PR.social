@@ -1,7 +1,7 @@
 {
   "name": "prsocial-bot-app",
   "version": "1.0.0",
-  "description": "PR Social Bot APK with Background Execution Support",
+  "description": "PR Social Bot APK with Multilingual & Background Execution Support",
   "main": "index.js",
   "scripts": {
     "build": "mkdir -p www && cp index.html www/"
